@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CSV Data Cleaner</title>
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+      background: #f0f0f0;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 16px;
+    }
+    .result {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload Your CSV File</h2>
+
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv" required />
+    <button type="submit">Upload & Clean</button>
+  </form>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    const form = document.getElementById("upload-form");
+    const resultDiv = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      try {
+        const response = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          resultDiv.innerHTML = `<p style="color:red;"> ${errorText}</p>`;
+          return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const reportHeader = response.headers.get("X-Cleaning-Report");
+
+        let reportHTML = "";
+        if (reportHeader) {
+          const report = JSON.parse(reportHeader);
+          reportHTML = `
+            <p>🧹 <b>Cleaning Report:</b></p>
+            <ul>
+              <li>Original Rows: ${report.original_rows}</li>
+              <li>Cleaned Rows: ${report.cleaned_rows}</li>
+              <li>Removed Null Rows: ${report.removed_null_rows}</li>
+              <li>Removed Invalid JSON Rows: ${report.removed_json_errors}</li>
+            </ul>
+          `;
+        }
+
+        resultDiv.innerHTML = `
+          ${reportHTML}
+          <a href="${url}" download="cleaned_data.csv">
+            <button>⬇️ Download Cleaned CSV</button>
+          </a>
+        `;
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Upload failed!</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
+
