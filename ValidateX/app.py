@@ -84,9 +84,11 @@ def upload_file():
         return response
 
     except Exception as e:
-        return f"❌ Error processing file: {str(e)}", 500
+        return f" Error processing file: {str(e)}", 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)
+
 
 
